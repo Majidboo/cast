@@ -1,1 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phone-to-Laptop Web Caster</title>
+    <style>
+        body { background: #121212; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; transition: all 0.3s ease; }
+        .hidden { display: none !important; }
+        video { width: 100%; max-width: 700px; border: 2px solid #333; border-radius: 8px; background: #000; margin-top: 10px; transition: all 0.3s ease; }
+        textarea { width: 90%; height: 70px; margin: 10px; background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 8px; }
+        button { padding: 10px 20px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 8px; margin: 20px auto; max-width: 750px; }
+        
+        body.fullscreen-mode {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            overflow: hidden;
+        }
+        body.fullscreen-mode h1,
+        body.fullscreen-mode #receiverView h2,
+        body.fullscreen-mode #receiverView p,
+        body.fullscreen-mode #receiverView textarea,
+        body.fullscreen-mode #receiverView button:not(#exitFullscreenBtn) {
+            display: none !important;
+        }
+        body.fullscreen-mode #receiverView {
+            background: transparent;
+            margin: 0;
+            padding: 0;
+            max-width: 100vw;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        body.fullscreen-mode video {
+            max-width: 100vw;
+            width: 100vw;
+            height: 100vh;
+            object-fit: contain;
+            border: none;
+            border-radius: 0;
+            margin: 0;
+        }
+        .fs-btn {
+            background: #28a745;
+            display: none;
+        }
+        .fs-btn:hover {
+            background: #218838;
+        }
+        body.fullscreen-mode .fs-btn {
+            display: inline-block;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            opacity: 0.7;
+        }
+        body.fullscreen-mode .fs-btn:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
 
+    <h1>Web Screen Caster</h1>
+    
+    <!-- Step 1: Choose Mode -->
+    <div id="modeSelect" class="card">
+        <h3>Select Your Device Role</h3>
+        <button onclick="initSender()">I am the Phone (Sender)</button>
+        <button onclick="initReceiver()">I am the Laptop (Receiver)</button>
+    </div>
+
+    <!-- SENDER VIEW (PHONE) -->
+    <div id="senderView" class="card hidden">
+        <h2>Phone Sender Panel</h2>
+        <button onclick="startSharing()">1. Start Sharing Screen</button>
+        <p>Copy this Offer and paste it into the Laptop:</p>
+        <textarea id="offerOutput" readonly placeholder="Waiting for screen share..."></textarea>
+        
+        <p>Paste Laptop's Answer here:</p>
+        <textarea id="answerInput" placeholder="Paste answer here..."></textarea><br>
+        <button onclick="setAnswer()">2. Connect</button>
+    </div>
+
+    <!-- RECEIVER VIEW (LAPTOP) -->
+    <div id="receiverView" class="card hidden">
+        <h2>Laptop Receiver Panel</h2>
+        <button id="exitFullscreenBtn" class="fs-btn" onclick="toggleFullscreen()">Exit Fullscreen</button>
+        <p>Paste Phone's Offer here:</p>
+        <textarea id="offerInput" placeholder="Paste offer here..."></textarea><br>
+        <button onclick="createAnswer()">1. Generate Answer</button>
+        
+        <p>Copy this Answer back to the Phone:</p>
+        <textarea id="answerOutput" readonly placeholder="Waiting for offer..."></textarea>
+        
+        <h3>Live Stream:</h3>
+        <video id="remoteVideo" autoplay playsinline></video>
+        <br>
+        <button id="enterFullscreenBtn" class="fs-btn" style="display:none; margin-top:15px;" onclick="toggleFullscreen()">Go Fullscreen</button>
+    </div>
+
+    <script>
+        const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+
+        function initSender() {
+            document.getElementById('modeSelect').classList.add('hidden');
+            document.getElementById('senderView').classList.remove('hidden');
+        }
+
+        function initReceiver() {
+            document.getElementById('modeSelect').classList.add('hidden');
+            document.getElementById('receiverView').classList.remove('hidden');
+
+            pc.ontrack = (event) => {
+                document.getElementById('remoteVideo').srcObject = event.streams[0];
+                // Show the fullscreen button once the stream starts streaming
+                document.getElementById('enterFullscreenBtn').style.display = 'inline-block';
+            };
+        }
+
+        // --- FULLSCREEN LOGIC ---
+        function toggleFullscreen() {
+            const body = document.body;
+            const enterBtn = document.getElementById('enterFullscreenBtn');
+            const exitBtn = document.getElementById('exitFullscreenBtn');
+
+            if (!body.classList.contains('fullscreen-mode')) {
+                body.classList.add('fullscreen-mode');
+                enterBtn.style.display = 'none';
+                exitBtn.style.display = 'inline-block';
+                
+                // Request native browser fullscreen api if available
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                }
+            } else {
+                body.classList.remove('fullscreen-mode');
+                enterBtn.style.display = 'inline-block';
+                exitBtn.style.display = 'none';
+
+                if (document.exitFullscreen && document.fullscreenElement) {
+                    document.exitFullscreen().catch(() => {});
+                }
+            }
+        }
+
+        // Listen for user exiting native browser fullscreen via ESC key
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement && document.body.classList.contains('fullscreen-mode')) {
+                document.body.classList.remove('fullscreen-mode');
+                document.getElementById('enterFullscreenBtn').style.display = 'inline-block';
+                document.getElementById('exitFullscreenBtn').style.display = 'none';
+            }
+        });
+
+        // --- SENDER LOGIC ---
+        async function startSharing() {
+            try {
+                const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+
+                pc.onicecandidate = (event) => {
+                    if (event.candidate === null) {
+                        document.getElementById('offerOutput').value = JSON.stringify(pc.localDescription);
+                    }
+                };
+            } catch (err) {
+                alert("Error accessing screen: " + err);
+            }
+        }
+
+        async function setAnswer() {
+            try {
+                const answerStr = document.getElementById('answerInput').value;
+                const answer = JSON.parse(answerStr);
+                await pc.setRemoteDescription(new RTCSessionDescription(answer));
+                alert("Connection established successfully!");
+            } catch (err) {
+                alert("Invalid answer format: " + err);
+            }
+        }
+
+        // --- RECEIVER LOGIC ---
+        async function createAnswer() {
+            try {
+                const offerStr = document.getElementById('offerInput').value;
+                const offer = JSON.parse(offerStr);
+                
+                await pc.setRemoteDescription(new RTCSessionDescription(offer));
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+
+                pc.onicecandidate = (event) => {
+                    if (event.candidate === null) {
+                        document.getElementById('answerOutput').value = JSON.stringify(pc.localDescription);
+                    }
+                };
+            } catch (err) {
+                alert("Invalid offer format: " + err);
+            }
+        }
+    </script>
+</body>
+</html>
