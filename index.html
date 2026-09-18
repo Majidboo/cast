@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phone Camera to Laptop Caster</title>
+    <title>Phone Screen to Laptop Caster</title>
     <style>
         body { background: #121212; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; transition: all 0.3s ease; }
         .hidden { display: none !important; }
@@ -68,7 +68,7 @@
 </head>
 <body>
 
-    <h1>Web Camera Caster (Phone to Laptop)</h1>
+    <h1>Web Screen Caster (Phone to Laptop)</h1>
     
     <!-- Step 1: Choose Mode -->
     <div id="modeSelect" class="card">
@@ -83,9 +83,9 @@
         <p>Set a connection code (e.g., 092323):</p>
         <input type="text" id="sessionCode" value="092323">
         <br>
-        <button onclick="startSharing()">1. Start Phone Camera</button>
+        <button onclick="startSharing()">1. Start Phone Screen</button>
         <p>Copy this Offer and paste it into the Laptop:</p>
-        <textarea id="offerOutput" readonly placeholder="Waiting for camera stream..."></textarea>
+        <textarea id="offerOutput" readonly placeholder="Waiting for screen share..."></textarea>
         
         <p>Paste Laptop's Answer here:</p>
         <textarea id="answerInput" placeholder="Paste answer here..."></textarea><br>
@@ -163,8 +163,8 @@
         async function startSharing() {
             try {
                 const code = document.getElementById('sessionCode').value;
-                // Phones support getUserMedia (camera) instead of getDisplayMedia (screen share)
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: true });
+                // Switched back to getDisplayMedia for full phone screen casting
+                const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
                 stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
                 const offer = await pc.createOffer();
@@ -177,7 +177,7 @@
                     }
                 };
             } catch (err) {
-                alert("Error accessing phone camera: " + err);
+                alert("Error accessing phone screen: " + err + "\n(Note: Mobile browsers may require a secure HTTPS connection or specific browser settings to allow screen sharing).");
             }
         }
 
@@ -215,4 +215,5 @@
         }
     </script>
 </body>
+</html>
 </html>
