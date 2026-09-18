@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laptop-to-Phone Web Caster</title>
+    <title>Phone Camera to Laptop Caster</title>
     <style>
         body { background: #121212; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; transition: all 0.3s ease; }
         .hidden { display: none !important; }
@@ -68,40 +68,40 @@
 </head>
 <body>
 
-    <h1>Web Screen Caster (Laptop to Phone)</h1>
+    <h1>Web Camera Caster (Phone to Laptop)</h1>
     
     <!-- Step 1: Choose Mode -->
     <div id="modeSelect" class="card">
         <h3>Select Your Device Role</h3>
-        <button onclick="initSender()">I am the Laptop (Sender)</button>
-        <button onclick="initReceiver()">I am the Phone (Receiver)</button>
+        <button onclick="initSender()">I am the Phone (Sender)</button>
+        <button onclick="initReceiver()">I am the Laptop (Receiver)</button>
     </div>
 
-    <!-- SENDER VIEW (LAPTOP) -->
+    <!-- SENDER VIEW (PHONE) -->
     <div id="senderView" class="card hidden">
-        <h2>Laptop Sender Panel</h2>
+        <h2>Phone Sender Panel</h2>
         <p>Set a connection code (e.g., 092323):</p>
         <input type="text" id="sessionCode" value="092323">
         <br>
-        <button onclick="startSharing()">1. Start Sharing Screen</button>
-        <p>Copy this Offer and paste it into the Phone:</p>
-        <textarea id="offerOutput" readonly placeholder="Waiting for screen share..."></textarea>
+        <button onclick="startSharing()">1. Start Phone Camera</button>
+        <p>Copy this Offer and paste it into the Laptop:</p>
+        <textarea id="offerOutput" readonly placeholder="Waiting for camera stream..."></textarea>
         
-        <p>Paste Phone's Answer here:</p>
+        <p>Paste Laptop's Answer here:</p>
         <textarea id="answerInput" placeholder="Paste answer here..."></textarea><br>
         <button onclick="setAnswer()">2. Connect</button>
     </div>
 
-    <!-- RECEIVER VIEW (PHONE) -->
+    <!-- RECEIVER VIEW (LAPTOP) -->
     <div id="receiverView" class="card hidden">
-        <h2>Phone Receiver Panel</h2>
+        <h2>Laptop Receiver Panel</h2>
         <button id="exitFullscreenBtn" class="fs-btn" onclick="toggleFullscreen()">Exit Fullscreen</button>
         
-        <p>Paste Laptop's Offer here:</p>
+        <p>Paste Phone's Offer here:</p>
         <textarea id="offerInput" placeholder="Paste offer here..."></textarea><br>
         <button onclick="createAnswer()">1. Generate Answer</button>
         
-        <p>Copy this Answer back to the Laptop:</p>
+        <p>Copy this Answer back to the Phone:</p>
         <textarea id="answerOutput" readonly placeholder="Waiting for offer..."></textarea>
         
         <h3>Live Stream:</h3>
@@ -163,7 +163,8 @@
         async function startSharing() {
             try {
                 const code = document.getElementById('sessionCode').value;
-                const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                // Phones support getUserMedia (camera) instead of getDisplayMedia (screen share)
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: true });
                 stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
                 const offer = await pc.createOffer();
@@ -171,13 +172,12 @@
 
                 pc.onicecandidate = (event) => {
                     if (event.candidate === null) {
-                        // Embed the custom code reference into the output object for visual tracking
                         const payload = { code: code, sdp: pc.localDescription };
                         document.getElementById('offerOutput').value = JSON.stringify(payload);
                     }
                 };
             } catch (err) {
-                alert("Error accessing screen: " + err);
+                alert("Error accessing phone camera: " + err);
             }
         }
 
